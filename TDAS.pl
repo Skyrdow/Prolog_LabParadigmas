@@ -39,25 +39,27 @@ hexcheck(Str) :-
 image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Width > 0,
     Height > 0.
+imageSetComp([Width, Height, -1, Pixs], Val, [Width, Height, Val, Pixs]).
 
 
-imagebitmap(I) :-
+
+imageIsBitmap(I) :-
     image(_, _, [H | _], I),
     pixbit-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
-imagepixmap(I) :-
+imageIsPixmap(I) :-
     image(_, _, [H | _], I),
     pixrgb-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
-imagehexmap(I) :-
+imageIsHexmap(I) :-
     image(_, _, [H | _], I),
     pixhex-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
-imagecompressed([_, _, Comp, _]) :-
+imageIsCompressed([_, _, Comp, _]) :-
     Comp = -1.
     
 % abs(pixY - imgH)
-flipH(I, I2) :-
+imageFlipH(I, I2) :-
     image(W, H, Pixs, I),
     flipPixsH(W-1, Pixs, FPixs),
     image(W, H, FPixs, I2).
@@ -70,7 +72,7 @@ flipPixsH(Dim, [H | T], [PixR | ListaR]) :-
     flipPixsH(Dim, T, ListaR).
 
 
-flipV(I, I2) :-
+imageFlipV(I, I2) :-
     image(W, H, Pixs, I),
     flipPixsV(H-1, Pixs, FPixs),
     image(W, H, FPixs, I2).
@@ -84,7 +86,7 @@ flipPixsV(Dim, [H | T], [PixR | ListaR]) :-
     flipPixsV(Dim, T, ListaR).
 
 
-crop(I, X1, Y1, X2, Y2, I2) :-
+imageCrop(I, X1, Y1, X2, Y2, I2) :-
     image(W, H, Pixs, I),
     cropPixs(X1, Y1, X2, Y2, Pixs, FPixs),
     NewW is 1+X2-X1,
@@ -92,18 +94,20 @@ crop(I, X1, Y1, X2, Y2, I2) :-
     image(NewW, NewH, FPixs, I2).
 
 cropPixs(_, _, _, _, [], []).
-
 cropPixs(X1, Y1, X2, Y2, [H | T], ListaR) :-
     cropPixs(X1, Y1, X2, Y2, T, ListaAux),
     pixel(X, Y, Val, D, H),
-    ((X1 =< X, X =< X2, Y1 =< Y, Y =< Y2,
-        NewX is X - X1,
-        NewY is Y - Y1,
-        pixel(NewX, NewY, Val, D, PixR),
-        ListaR = [PixR | ListaAux] );
-    (ListaR = ListaAux)).
+    X1 =< X, X =< X2, Y1 =< Y, Y =< Y2,
+    NewX is X - X1,
+    NewY is Y - Y1,
+    pixel(NewX, NewY, Val, D, PixR),
+    ListaR = [PixR | ListaAux].
+cropPixs(X1, Y1, X2, Y2, [H | T], ListaR) :-
+    cropPixs(X1, Y1, X2, Y2, T, ListaAux),
+    pixel(X, Y, Val, D, H),
+    ListaR = ListaAux.
 
-rgbtohex(I, I2):-
+imageRGBToHex(I, I2):-
     image(W, H, Pixs, I),
     pixsRGBtoHex(Pixs, RPixs),
     image(W, H, RPixs, I2).
@@ -115,6 +119,17 @@ pixsRGBtoHex([H | T], [R | ListaR]) :-
     string_concat("#", HexStr, NewVal),
     pixel(X, Y, NewVal, D, R),
     pixsRGBtoHex(T, ListaR).
+
+imageToHistogram(I, R) :-
+    image(W, H, Pixs, I),
+    pixsToVal(Pixs, Vals),
+    max_member(R, Vals).
+
+pixsToVal([], []).
+pixsToVal([Pix | T], [Val | ListaR]) :-
+    pixel(_, _, Val, _, Pix),
+    pixsToVal(T, ListaR).
+
 
 
 img1(I) :-
@@ -130,3 +145,12 @@ img2(I) :-
     pixrgb-d( 1, 0, 0, 6, 7, 30, PC),
     pixrgb-d( 1, 1, 1, 4, 7, 8, PD),
     image( 2, 2, [PA, PB, PC, PD], I).
+
+img3(I) :-
+    pixrgb-d( 0, 0, 1, 3, 4, 10, PA),
+    pixrgb-d( 0, 1, 0, 3, 5, 20, PB),
+    pixrgb-d( 1, 0, 0, 6, 7, 30, PC),
+    pixrgb-d( 1, 1, 1, 4, 7, 8, PD),
+    pixrgb-d( 1, 1, 1, 4, 7, 9, PE),
+    pixrgb-d( 1, 1, 1, 4, 7, 80, PF),
+    image( 2, 3, [PA, PB, PC, PD, PE, PF], I).
