@@ -3,10 +3,12 @@ pixel(X, Y, Val, D, [X, Y, Val, D]) :-
     number(Y),
     between(0, 255, D).
 
+pixelGetVal([_, _, Val, _], Val).
+
 pixbit-d(X, Y, Bit, D, P) :-
+    pixel(X, Y, Bit, D, P),
     number(Bit),
-    between(0, 1, Bit),
-    pixel(X, Y, Bit, D, P).
+    between(0, 1, Bit).
 
 
 pixrgb-d(X, Y, R, G, B, D, P) :-
@@ -25,9 +27,9 @@ rgbcheck([R, G, B]) :-
 
 
 pixhex-d(X, Y, Hex, D, P) :-
+    pixel(X, Y, Hex, D, P),
     string(Hex),
-    hexcheck(Hex),
-    pixel(X, Y, Hex, D, P).
+    hexcheck(Hex).
 
 hexcheck(Str) :-
     name(Str, [H | T]), % separar "#RRGGBB" en "#" y "RRGGBB"
@@ -39,6 +41,8 @@ hexcheck(Str) :-
 image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Width > 0,
     Height > 0.
+
+imageGetPixs([_, _, _, Pixs], Pixs).
 imageSetComp([Width, Height, -1, Pixs], Val, [Width, Height, Val, Pixs]).
 
 
@@ -121,16 +125,88 @@ pixsRGBtoHex([H | T], [R | ListaR]) :-
     pixsRGBtoHex(T, ListaR).
 
 imageToHistogram(I, R) :-
-    image(W, H, Pixs, I),
+    image(_, _, _, I),
+    imageGetPixs(I, Pixs),
     pixsToVal(Pixs, Vals),
     max_member(R, Vals).
 
 pixsToVal([], []).
 pixsToVal([Pix | T], [Val | ListaR]) :-
-    pixel(_, _, Val, _, Pix),
+    pixelGetVal(Pix, Val),
     pixsToVal(T, ListaR).
 
+imageRotate90(I, I2) :-
+    image(W, H, Pixs, I),
+    pixsSwapXY(Pixs, PixsSwap),
+    flipPixsH(W-1, PixsSwap, PixsR),
+    image(H, W, PixsR, I2).
 
+pixsSwapXY([], []).
+pixsSwapXY([Pix | T], [PixR | ListaR]) :-
+    pixel(X, Y, Val, D, Pix),
+    pixel(Y, X, Val, D, PixR),
+    pixsSwapXY(T, ListaR).
+
+imageCompress(I, [W, H, CompVal, PixsR]) :-
+    imageToHistogram(I, CompVal),
+    image(W, H, Pixs, I),
+    erasePixs(Pixs, CompVal, PixsR).
+
+erasePixs([], _, []).
+% CASO 1, VAL = ERASEVAL
+erasePixs([[X, Y, EraseVal, D] | T], EraseVal, ListaR) :-
+    erasePixs(T, EraseVal, ListaR).
+% CASO 2, VAL != ERASEVAL
+erasePixs([Pix | T], EraseVal, [Pix | ListaR]) :-
+    erasePixs(T, EraseVal, ListaR).
+
+imageChangePixel(I, PMod, I2) :-
+    image(W, H, Pixs, I),
+    changePixs(Pixs, PMod, PixsR),
+    image(W, H, PixsR, I2).
+
+changePixs([], _, []).
+changePixs([[X, Y, Val, D] | T], [X, Y, NewVal, NewD], [[X, Y, NewVal, NewD] | T]).
+changePixs([Pix | T], PMod, [Pix | ListaR]) :-
+    changePixs(T, PMod, ListaR).
+
+invertColorRGB(PE, PR) :-
+    pixrgb-d(X, Y, R, G, B, D, PE),
+    NewR is 255 - R,
+    NewG is 255 - G,
+    NewB is 255 - B,
+    pixrgb-d(X, Y, NewR, NewG, NewB, D, PR).
+
+imageString(I, Str) :-
+    image(W, H, Pixs, I),
+    imageIsBitmap(I),
+    W1 is W - 1,
+    pixbitToString(W1, Pixs, Str).
+
+pixbitToString(_, [], "").
+pixbitToString(W, [[W, _, Val, _] | T], StrR) :-
+    number_string(Val, StrVal),
+    pixbitToString(W, T, StrT),
+    string_concat(StrVal, "\n", StrValNewL),
+    string_concat(StrValNewL, StrT, StrR).
+
+pixbitToString(W, [Pix | T], StrR) :-
+    pixelGetVal(Pix, Val),
+    number_string(Val, StrVal),
+    pixbitToString(W, T, StrT),
+    string_concat(StrVal, " ", StrValSpace),
+    string_concat(StrValSpace, StrT, StrR).
+
+
+
+sortImage(I, I2) :-
+    image(W, H, Pixs, I),
+    image(W, H, PixsR, I2),
+    W1 is W - 1,
+    H1 is H - 1,
+    sortPixs(W1, H1, Pixs, PixsR).
+
+sortPixs(W, H, [H | T], [PixR | PixT])
 
 img1(I) :-
     pixbit-d( 0, 0, 1, 10, PA),
