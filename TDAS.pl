@@ -32,7 +32,7 @@ pixhex-d(X, Y, Hex, D, P) :-
     hexcheck(Hex).
 
 hexcheck(Str) :-
-    name(Str, [H | T]), % separar "#RRGGBB" en "#" y "RRGGBB"
+    name(Str, [_ | T]), % separar "#RRGGBB" en "#" y "RRGGBB"
     name(HexRGB, T), % reconstruir la string
     hex_bytes(HexRGB, Rgb), % transforma de string a [R, G, B]
     rgbcheck(Rgb).
@@ -43,8 +43,8 @@ image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Height > 0.
 
 imageGetPixs([_, _, _, Pixs], Pixs).
+imageGetComp([_, _, Comp, _], Comp).
 imageSetComp([Width, Height, -1, Pixs], Val, [Width, Height, Val, Pixs]).
-
 
 
 imageIsBitmap(I) :-
@@ -53,13 +53,14 @@ imageIsBitmap(I) :-
 
 imageIsPixmap(I) :-
     image(_, _, [H | _], I),
-    pixrgb-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
+    pixrgb-d(_, _, _, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
 imageIsHexmap(I) :-
     image(_, _, [H | _], I),
     pixhex-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
-imageIsCompressed([_, _, Comp, _]) :-
+imageIsCompressed(I) :-
+    imageGetComp(I, Comp),
     Comp = -1.
     
 % abs(pixY - imgH)
@@ -91,7 +92,7 @@ flipPixsV(Dim, [H | T], [PixR | ListaR]) :-
 
 
 imageCrop(I, X1, Y1, X2, Y2, I2) :-
-    image(W, H, Pixs, I),
+    image(_, _, Pixs, I),
     cropPixs(X1, Y1, X2, Y2, Pixs, FPixs),
     NewW is 1+X2-X1,
     NewH is 1+Y2-Y1,
@@ -106,9 +107,8 @@ cropPixs(X1, Y1, X2, Y2, [H | T], ListaR) :-
     NewY is Y - Y1,
     pixel(NewX, NewY, Val, D, PixR),
     ListaR = [PixR | ListaAux].
-cropPixs(X1, Y1, X2, Y2, [H | T], ListaR) :-
+cropPixs(X1, Y1, X2, Y2, [_ | T], ListaR) :-
     cropPixs(X1, Y1, X2, Y2, T, ListaAux),
-    pixel(X, Y, Val, D, H),
     ListaR = ListaAux.
 
 imageRGBToHex(I, I2):-
@@ -129,6 +129,15 @@ imageToHistogram(I, R) :-
     imageGetPixs(I, Pixs),
     pixsToVal(Pixs, Vals),
     max_member(R, Vals).
+
+maxMember(Ret, Vals) :-
+    msort(Vals, SortVals),
+    maxMembers(SortVals, CountVals).
+
+maxMembers([Val | T], []) :-
+    maxMembers(T, [Val, 0]).
+maxMembers([Val | T], Val, Count) :-
+
 
 pixsToVal([], []).
 pixsToVal([Pix | T], [Val | ListaR]) :-
@@ -178,10 +187,26 @@ invertColorRGB(PE, PR) :-
     pixrgb-d(X, Y, NewR, NewG, NewB, D, PR).
 
 imageString(I, Str) :-
-    image(W, H, Pixs, I),
+    image(W, _, _, I),
     imageIsBitmap(I),
     W1 is W - 1,
+    sortImage(I, I2),
+    imageGetPixs(I2, Pixs),
     pixbitToString(W1, Pixs, Str).
+imageString(I, Str) :-
+    image(W, _, _, I),
+    imageIsPixmap(I),
+    W1 is W - 1,
+    sortImage(I, I2),
+    imageGetPixs(I2, Pixs),
+    pixrgbToString(W1, Pixs, Str).
+imageString(I, Str) :-
+    image(W, _, _, I),
+    imageIsHexmap(I),
+    W1 is W - 1,
+    sortImage(I, I2),
+    imageGetPixs(I2, Pixs),
+    pixhexToString(W1, Pixs, Str).
 
 pixbitToString(_, [], "").
 pixbitToString(W, [[W, _, Val, _] | T], StrR) :-
@@ -198,22 +223,86 @@ pixbitToString(W, [Pix | T], StrR) :-
     string_concat(StrValSpace, StrT, StrR).
 
 
+pixrgbToString(_, [], "").
+pixrgbToString(W, [[W, _, Val, _] | T], StrR) :-
+    rgbToString(Val, StrVal),
+    pixrgbToString(W, T, StrT),
+    string_concat(StrVal, "\n", StrValNewL),
+    string_concat(StrValNewL, StrT, StrR).
+
+pixrgbToString(W, [Pix | T], StrR) :-
+    pixelGetVal(Pix, Val),
+    rgbToString(Val, StrVal),
+    pixrgbToString(W, T, StrT),
+    string_concat(StrVal, " ", StrValSpace),
+    string_concat(StrValSpace, StrT, StrR).
+
+rgbToString([R, G, B], Str) :-
+    number_string(R, StrR),
+    number_string(G, StrG),
+    number_string(B, StrB),
+    string_concat(StrR, " ", Str1),
+    string_concat(StrG, " ", Str2),
+    string_concat(Str1, Str2, Str3),
+    string_concat(Str3, StrB, Str4),
+    string_concat("(", Str4, Str5),
+    string_concat(Str5, ")", Str).
+    
+
+pixhexToString(_, [], "").
+pixhexToString(W, [[W, _, Val, _] | T], StrR) :-
+    pixhexToString(W, T, StrT),
+    string_concat(Val, "\n", StrValNewL),
+    string_concat(StrValNewL, StrT, StrR).
+
+pixhexToString(W, [Pix | T], StrR) :-
+    pixelGetVal(Pix, Val),
+    pixhexToString(W, T, StrT),
+    string_concat(Val, " ", StrValSpace),
+    string_concat(StrValSpace, StrT, StrR).
+
 
 sortImage(I, I2) :-
     image(W, H, Pixs, I),
     image(W, H, PixsR, I2),
     W1 is W - 1,
     H1 is H - 1,
-    sortPixs(W1, H1, Pixs, PixsR).
+    sortPixs(0, 0, W1, H1, Pixs, PixsR).
 
-sortPixs(W, H, [H | T], [PixR | PixT])
+sortPixs(W, H, W, H, Pixs, [PixR]) :-
+    findPix(W, H, Pixs, PixR).
+
+sortPixs(W, J, W, H, Pixs, [PixR | PixT]) :-
+    findPix(W, J, Pixs, PixR),
+    NewI is 0,
+    NewJ is J+1,
+    sortPixs(NewI, NewJ, W, H, Pixs, PixT).
+
+sortPixs(I, J, W, H, Pixs, [PixR | PixT]) :-
+    findPix(I, J, Pixs, PixR),
+    NewI is I+1,
+    sortPixs(NewI, J, W, H, Pixs, PixT).
+
+findPix(X, Y, [], ["Pixel no encontrado"]).
+findPix(X, Y, [[X, Y, Val, D] | T], [X, Y, Val, D]).
+findPix(X, Y, [Pix | T], PixR) :-
+    findPix(X, Y, T, PixR).
+
+
 
 img1(I) :-
     pixbit-d( 0, 0, 1, 10, PA),
     pixbit-d( 0, 1, 0, 20, PB),
     pixbit-d( 1, 0, 0, 30, PC),
-    pixbit-d( 1, 1, 1, 4, PD),
-    image( 2, 2, [PA, PB, PC, PD], I).
+    pixbit-d( 1, 1, 1, 40, PD),
+    image( 2, 2, [PB, PA, PD, PC], I).
+
+img4(I) :-
+    pixhex-d( 0, 0, "#FF0011", 10, PA),
+    pixhex-d( 0, 1, "#FF5544", 20, PB),
+    pixhex-d( 1, 0, "#00FF22", 30, PC),
+    pixhex-d( 1, 1, "#0011FF", 40, PD),
+    image( 2, 2, [PB, PA, PD, PC], I).
 
 img2(I) :-
     pixrgb-d( 0, 0, 1, 3, 4, 10, PA),
@@ -227,6 +316,6 @@ img3(I) :-
     pixrgb-d( 0, 1, 0, 3, 5, 20, PB),
     pixrgb-d( 1, 0, 0, 6, 7, 30, PC),
     pixrgb-d( 1, 1, 1, 4, 7, 8, PD),
-    pixrgb-d( 1, 1, 1, 4, 7, 9, PE),
-    pixrgb-d( 1, 1, 1, 4, 7, 80, PF),
-    image( 2, 3, [PA, PB, PC, PD, PE, PF], I).
+    pixrgb-d( 0, 2, 1, 4, 7, 9, PE),
+    pixrgb-d( 1, 2, 1, 4, 7, 80, PF),
+    image( 2, 3, [PA, PB, PD, PC, PE, PF], I).
