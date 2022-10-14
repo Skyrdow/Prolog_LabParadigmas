@@ -4,6 +4,7 @@ pixel(X, Y, Val, D, [X, Y, Val, D]) :-
     between(0, 255, D).
 
 pixelGetVal([_, _, Val, _], Val).
+pixelGetDepth([_, _, _, Depth], Depth).
 
 pixbit-d(X, Y, Bit, D, P) :-
     pixel(X, Y, Bit, D, P),
@@ -61,7 +62,7 @@ imageIsHexmap(I) :-
 
 imageIsCompressed(I) :-
     imageGetComp(I, Comp),
-    Comp = -1.
+    not(Comp = -1).
     
 % abs(pixY - imgH)
 imageFlipH(I, I2) :-
@@ -128,15 +129,14 @@ imageToHistogram(I, R) :-
     image(_, _, _, I),
     imageGetPixs(I, Pixs),
     pixsToVal(Pixs, Vals),
-    max_member(R, Vals).
-
-maxMember(Ret, Vals) :-
     msort(Vals, SortVals),
-    maxMembers(SortVals, CountVals).
+    clumped(SortVals, Clump),
+    compoundToHistogram(Clump, R).
 
-maxMembers([Val | T], []) :-
-    maxMembers(T, [Val, 0]).
-maxMembers([Val | T], Val, Count) :-
+compoundToHistogram([], []).
+compoundToHistogram([Cl | T], [Histo | ListaR]) :-
+    compound_name_arguments(Cl, -, Histo),
+    compoundToHistogram(T, ListaR).
 
 
 pixsToVal([], []).
@@ -157,9 +157,17 @@ pixsSwapXY([Pix | T], [PixR | ListaR]) :-
     pixsSwapXY(T, ListaR).
 
 imageCompress(I, [W, H, CompVal, PixsR]) :-
-    imageToHistogram(I, CompVal),
+    imageToHistogram(I, Histo),
+    maxHistogram(Histo, [0, 0], CompVal),
     image(W, H, Pixs, I),
     erasePixs(Pixs, CompVal, PixsR).
+
+maxHistogram([], [MaxVal, MaxCount], MaxVal).
+maxHistogram([[Val | Count] | T], [MaxVal, MaxCount], MaxHVal) :-
+    Count > MaxCount,
+    maxHistogram(T, [Val | Count], MaxHVal).
+maxHistogram([_ | T], Max, MaxHVal) :-
+    maxHistogram(T, Max, MaxHVal).
 
 erasePixs([], _, []).
 % CASO 1, VAL = ERASEVAL
@@ -283,12 +291,114 @@ sortPixs(I, J, W, H, Pixs, [PixR | PixT]) :-
     NewI is I+1,
     sortPixs(NewI, J, W, H, Pixs, PixT).
 
-findPix(X, Y, [], ["Pixel no encontrado"]).
+findPix(X, Y, [], [X, Y, -1, 0]).
 findPix(X, Y, [[X, Y, Val, D] | T], [X, Y, Val, D]).
 findPix(X, Y, [Pix | T], PixR) :-
     findPix(X, Y, T, PixR).
 
 
+
+imageDepthLayers(I, LI) :-
+    imageIsBitmap(I),
+    imageGetPixs(I, Pixs),
+    pixsToDepths(Pixs, Depths),
+    bitDepthLayersGen(I, Depths, LI).
+
+imageDepthLayers(I, LI) :-
+    imageIsPixmap(I),
+    imageGetPixs(I, Pixs),
+    pixsToDepths(Pixs, Depths),
+    rgbDepthLayersGen(I, Depths, LI).
+
+imageDepthLayers(I, LI) :-
+    imageIsHexmap(I),
+    imageGetPixs(I, Pixs),
+    pixsToDepths(Pixs, Depths),
+    hexDepthLayersGen(I, Depths, LI).
+
+pixsToDepths([], []).
+pixsToDepths([Pix | T], [D | ListaR]) :-
+    pixelGetDepth(Pix, D),
+    pixsToDepths(T, ListaR).
+
+
+bitDepthLayersGen(_, [], []).
+bitDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
+    image(W, H, Pixs, I),
+    bitDepthPixs(Pixs, IterDep, PixsDep),
+    image(W, H, PixsDep, DImg),
+    bitDepthLayersGen(I, T, ListaR).
+
+bitDepthPixs([], _, []).
+bitDepthPixs([Pix | T], D, [Pix | ListaR]) :-
+    pixbit-d(X, Y, Bit, D,  Pix),
+    bitDepthPixs(T, D, ListaR).
+bitDepthPixs([Pix | T], Depth, [P | ListaR]) :-
+    pixbit-d(X, Y, _, D, Pix),
+    pixbit-d(X, Y, 1, D, P),
+    bitDepthPixs(T, Depth, ListaR).
+
+rgbDepthLayersGen(_, [], []).
+rgbDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
+    image(W, H, Pixs, I),
+    rgbDepthPixs(Pixs, IterDep, PixsDep),
+    image(W, H, PixsDep, DImg),
+    rgbDepthLayersGen(I, T, ListaR).
+
+rgbDepthPixs([], _, []).
+rgbDepthPixs([Pix | T], D, [Pix | ListaR]) :-
+    pixrgb-d(X, Y, R, G, B, D, Pix),
+    rgbDepthPixs(T, D, ListaR).
+rgbDepthPixs([Pix | T], Depth, [P | ListaR]) :-
+    pixrgb-d(X, Y, _, _, _, D, Pix),
+    pixrgb-d(X, Y, 255, 255, 255, D, P),
+    rgbDepthPixs(T, Depth, ListaR).
+
+hexDepthLayersGen(_, [], []).
+hexDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
+    image(W, H, Pixs, I),
+    hexDepthPixs(Pixs, IterDep, PixsDep),
+    image(W, H, PixsDep, DImg),
+    hexDepthLayersGen(I, T, ListaR).
+
+hexDepthPixs([], _, []).
+hexDepthPixs([Pix | T], D, [Pix | ListaR]) :-
+    pixhex-d(X, Y, Hex, D, Pix),
+    hexDepthPixs(T, D, ListaR).
+hexDepthPixs([Pix | T], Depth, [P | ListaR]) :-
+    pixhex-d(X, Y, _, D, Pix),
+    pixhex-d(X, Y, "#FFFFFF", D, P),
+    hexDepthPixs(T, Depth, ListaR).
+
+imageDecompress(I, I) :-
+    not(imageIsCompressed(I)).
+
+imageDecompress([W, H, Comp, Pixs], I2) :-
+    W1 is W - 1,
+    H1 is H - 1,
+    decompPixs(0, 0, W1, H1, Comp, Pixs, DecompPixs),
+    image(W, H, DecompPixs, I2).
+
+decompPixs(W, H, W, H, CompVal, Pixs, [PixR]) :-
+    findPix(W, H, Pixs, PixF),
+    decompPix(PixF, CompVal, PixR).
+
+decompPixs(W, J, W, H, CompVal, Pixs, [PixR | PixT]) :-
+    findPix(W, J, Pixs, PixF),
+    decompPix(PixF, CompVal, PixR),
+    NewI is 0,
+    NewJ is J+1,
+    decompPixs(NewI, NewJ, W, H, CompVal, Pixs, PixT).
+
+decompPixs(I, J, W, H, CompVal, Pixs, [PixR | PixT]) :-
+    findPix(I, J, Pixs, PixF),
+    decompPix(PixF, CompVal, PixR),
+    NewI is I+1,
+    decompPixs(NewI, J, W, H, CompVal, Pixs, PixT).
+
+decompPix([X, Y, -1, 0], CompVal, DecomPix) :-
+    pixel(X, Y, CompVal, 0, DecomPix).
+decompPix(Pix, _, Pix).
 
 img1(I) :-
     pixbit-d( 0, 0, 1, 10, PA),
