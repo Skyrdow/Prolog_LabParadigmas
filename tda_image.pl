@@ -1,43 +1,4 @@
-pixel(X, Y, Val, D, [X, Y, Val, D]) :-
-    number(X),
-    number(Y),
-    between(0, 255, D).
-
-pixelGetVal([_, _, Val, _], Val).
-pixelGetDepth([_, _, _, Depth], Depth).
-
-pixbit-d(X, Y, Bit, D, P) :-
-    pixel(X, Y, Bit, D, P),
-    number(Bit),
-    between(0, 1, Bit).
-
-
-pixrgb-d(X, Y, R, G, B, D, P) :-
-    pixel(X, Y, [R, G, B], D, P),
-    number(R),
-    number(G),
-    number(B),
-    between(0, 255, R),
-    between(0, 255, G),
-    between(0, 255, B).
-    
-rgbcheck([R, G, B]) :-
-    between(0, 255, R),
-    between(0, 255, G),
-    between(0, 255, B).
-
-
-pixhex-d(X, Y, Hex, D, P) :-
-    pixel(X, Y, Hex, D, P),
-    string(Hex),
-    hexcheck(Hex).
-
-hexcheck(Str) :-
-    name(Str, [_ | T]), % separar "#RRGGBB" en "#" y "RRGGBB"
-    name(HexRGB, T), % reconstruir la string
-    hex_bytes(HexRGB, Rgb), % transforma de string a [R, G, B]
-    rgbcheck(Rgb).
-
+:- use_module(tda_pixel).
 
 image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Width > 0,
@@ -50,15 +11,15 @@ imageSetComp([Width, Height, -1, Pixs], Val, [Width, Height, Val, Pixs]).
 
 imageIsBitmap(I) :-
     image(_, _, [H | _], I),
-    pixbit-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
+    pixbit(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
 imageIsPixmap(I) :-
     image(_, _, [H | _], I),
-    pixrgb-d(_, _, _, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
+    pixrgb(_, _, _, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
 imageIsHexmap(I) :-
     image(_, _, [H | _], I),
-    pixhex-d(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
+    pixhex(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
 imageIsCompressed(I) :-
     imageGetComp(I, Comp),
@@ -162,8 +123,8 @@ imageCompress(I, [W, H, CompVal, PixsR]) :-
     image(W, H, Pixs, I),
     erasePixs(Pixs, CompVal, PixsR).
 
-maxHistogram([], [MaxVal, MaxCount], MaxVal).
-maxHistogram([[Val | Count] | T], [MaxVal, MaxCount], MaxHVal) :-
+maxHistogram([], [MaxVal, _], MaxVal).
+maxHistogram([[Val | Count] | T], [_, MaxCount], MaxHVal) :-
     Count > MaxCount,
     maxHistogram(T, [Val | Count], MaxHVal).
 maxHistogram([_ | T], Max, MaxHVal) :-
@@ -171,7 +132,7 @@ maxHistogram([_ | T], Max, MaxHVal) :-
 
 erasePixs([], _, []).
 % CASO 1, VAL = ERASEVAL
-erasePixs([[X, Y, EraseVal, D] | T], EraseVal, ListaR) :-
+erasePixs([[_, _, EraseVal, _] | T], EraseVal, ListaR) :-
     erasePixs(T, EraseVal, ListaR).
 % CASO 2, VAL != ERASEVAL
 erasePixs([Pix | T], EraseVal, [Pix | ListaR]) :-
@@ -183,16 +144,16 @@ imageChangePixel(I, PMod, I2) :-
     image(W, H, PixsR, I2).
 
 changePixs([], _, []).
-changePixs([[X, Y, Val, D] | T], [X, Y, NewVal, NewD], [[X, Y, NewVal, NewD] | T]).
+changePixs([[X, Y, _, _] | T], [X, Y, NewVal, NewD], [[X, Y, NewVal, NewD] | T]).
 changePixs([Pix | T], PMod, [Pix | ListaR]) :-
     changePixs(T, PMod, ListaR).
 
 invertColorRGB(PE, PR) :-
-    pixrgb-d(X, Y, R, G, B, D, PE),
+    pixrgb(X, Y, R, G, B, D, PE),
     NewR is 255 - R,
     NewG is 255 - G,
     NewB is 255 - B,
-    pixrgb-d(X, Y, NewR, NewG, NewB, D, PR).
+    pixrgb(X, Y, NewR, NewG, NewB, D, PR).
 
 imageString(I, Str) :-
     image(W, _, _, I),
@@ -215,59 +176,6 @@ imageString(I, Str) :-
     sortImage(I, I2),
     imageGetPixs(I2, Pixs),
     pixhexToString(W1, Pixs, Str).
-
-pixbitToString(_, [], "").
-pixbitToString(W, [[W, _, Val, _] | T], StrR) :-
-    number_string(Val, StrVal),
-    pixbitToString(W, T, StrT),
-    string_concat(StrVal, "\n", StrValNewL),
-    string_concat(StrValNewL, StrT, StrR).
-
-pixbitToString(W, [Pix | T], StrR) :-
-    pixelGetVal(Pix, Val),
-    number_string(Val, StrVal),
-    pixbitToString(W, T, StrT),
-    string_concat(StrVal, " ", StrValSpace),
-    string_concat(StrValSpace, StrT, StrR).
-
-
-pixrgbToString(_, [], "").
-pixrgbToString(W, [[W, _, Val, _] | T], StrR) :-
-    rgbToString(Val, StrVal),
-    pixrgbToString(W, T, StrT),
-    string_concat(StrVal, "\n", StrValNewL),
-    string_concat(StrValNewL, StrT, StrR).
-
-pixrgbToString(W, [Pix | T], StrR) :-
-    pixelGetVal(Pix, Val),
-    rgbToString(Val, StrVal),
-    pixrgbToString(W, T, StrT),
-    string_concat(StrVal, " ", StrValSpace),
-    string_concat(StrValSpace, StrT, StrR).
-
-rgbToString([R, G, B], Str) :-
-    number_string(R, StrR),
-    number_string(G, StrG),
-    number_string(B, StrB),
-    string_concat(StrR, " ", Str1),
-    string_concat(StrG, " ", Str2),
-    string_concat(Str1, Str2, Str3),
-    string_concat(Str3, StrB, Str4),
-    string_concat("(", Str4, Str5),
-    string_concat(Str5, ")", Str).
-    
-
-pixhexToString(_, [], "").
-pixhexToString(W, [[W, _, Val, _] | T], StrR) :-
-    pixhexToString(W, T, StrT),
-    string_concat(Val, "\n", StrValNewL),
-    string_concat(StrValNewL, StrT, StrR).
-
-pixhexToString(W, [Pix | T], StrR) :-
-    pixelGetVal(Pix, Val),
-    pixhexToString(W, T, StrT),
-    string_concat(Val, " ", StrValSpace),
-    string_concat(StrValSpace, StrT, StrR).
 
 
 sortImage(I, I2) :-
@@ -292,11 +200,9 @@ sortPixs(I, J, W, H, Pixs, [PixR | PixT]) :-
     sortPixs(NewI, J, W, H, Pixs, PixT).
 
 findPix(X, Y, [], [X, Y, -1, 0]).
-findPix(X, Y, [[X, Y, Val, D] | T], [X, Y, Val, D]).
-findPix(X, Y, [Pix | T], PixR) :-
+findPix(X, Y, [[X, Y, Val, D] | _], [X, Y, Val, D]).
+findPix(X, Y, [_ | T], PixR) :-
     findPix(X, Y, T, PixR).
-
-
 
 imageDepthLayers(I, LI) :-
     imageIsBitmap(I),
@@ -321,7 +227,6 @@ pixsToDepths([Pix | T], [D | ListaR]) :-
     pixelGetDepth(Pix, D),
     pixsToDepths(T, ListaR).
 
-
 bitDepthLayersGen(_, [], []).
 bitDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
     image(W, H, Pixs, I),
@@ -331,11 +236,11 @@ bitDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
 
 bitDepthPixs([], _, []).
 bitDepthPixs([Pix | T], D, [Pix | ListaR]) :-
-    pixbit-d(X, Y, Bit, D,  Pix),
+    pixelGetDepth(Pix, D),
     bitDepthPixs(T, D, ListaR).
 bitDepthPixs([Pix | T], Depth, [P | ListaR]) :-
-    pixbit-d(X, Y, _, D, Pix),
-    pixbit-d(X, Y, 1, D, P),
+    pixbit(X, Y, _, D, Pix),
+    pixbit(X, Y, 1, D, P),
     bitDepthPixs(T, Depth, ListaR).
 
 rgbDepthLayersGen(_, [], []).
@@ -347,11 +252,11 @@ rgbDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
 
 rgbDepthPixs([], _, []).
 rgbDepthPixs([Pix | T], D, [Pix | ListaR]) :-
-    pixrgb-d(X, Y, R, G, B, D, Pix),
+    pixelGetDepth(Pix, D),
     rgbDepthPixs(T, D, ListaR).
 rgbDepthPixs([Pix | T], Depth, [P | ListaR]) :-
-    pixrgb-d(X, Y, _, _, _, D, Pix),
-    pixrgb-d(X, Y, 255, 255, 255, D, P),
+    pixrgb(X, Y, _, _, _, D, Pix),
+    pixrgb(X, Y, 255, 255, 255, D, P),
     rgbDepthPixs(T, Depth, ListaR).
 
 hexDepthLayersGen(_, [], []).
@@ -363,11 +268,11 @@ hexDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
 
 hexDepthPixs([], _, []).
 hexDepthPixs([Pix | T], D, [Pix | ListaR]) :-
-    pixhex-d(X, Y, Hex, D, Pix),
+    pixelGetDepth(Pix, D),
     hexDepthPixs(T, D, ListaR).
 hexDepthPixs([Pix | T], Depth, [P | ListaR]) :-
-    pixhex-d(X, Y, _, D, Pix),
-    pixhex-d(X, Y, "#FFFFFF", D, P),
+    pixhex(X, Y, _, D, Pix),
+    pixhex(X, Y, "#FFFFFF", D, P),
     hexDepthPixs(T, Depth, ListaR).
 
 imageDecompress(I, I) :-
@@ -400,32 +305,33 @@ decompPix([X, Y, -1, 0], CompVal, DecomPix) :-
     pixel(X, Y, CompVal, 0, DecomPix).
 decompPix(Pix, _, Pix).
 
+
 img1(I) :-
-    pixbit-d( 0, 0, 1, 10, PA),
-    pixbit-d( 0, 1, 0, 20, PB),
-    pixbit-d( 1, 0, 0, 30, PC),
-    pixbit-d( 1, 1, 1, 40, PD),
+    pixbit( 0, 0, 1, 10, PA),
+    pixbit( 0, 1, 0, 20, PB),
+    pixbit( 1, 0, 0, 30, PC),
+    pixbit( 1, 1, 1, 40, PD),
     image( 2, 2, [PB, PA, PD, PC], I).
 
 img4(I) :-
-    pixhex-d( 0, 0, "#FF0011", 10, PA),
-    pixhex-d( 0, 1, "#FF5544", 20, PB),
-    pixhex-d( 1, 0, "#00FF22", 30, PC),
-    pixhex-d( 1, 1, "#0011FF", 40, PD),
+    pixhex( 0, 0, "#FF0011", 10, PA),
+    pixhex( 0, 1, "#FF5544", 20, PB),
+    pixhex( 1, 0, "#00FF22", 30, PC),
+    pixhex( 1, 1, "#0011FF", 40, PD),
     image( 2, 2, [PB, PA, PD, PC], I).
 
 img2(I) :-
-    pixrgb-d( 0, 0, 1, 3, 4, 10, PA),
-    pixrgb-d( 0, 1, 0, 3, 5, 20, PB),
-    pixrgb-d( 1, 0, 0, 6, 7, 30, PC),
-    pixrgb-d( 1, 1, 1, 4, 7, 8, PD),
+    pixrgb( 0, 0, 1, 3, 4, 10, PA),
+    pixrgb( 0, 1, 0, 3, 5, 20, PB),
+    pixrgb( 1, 0, 0, 6, 7, 30, PC),
+    pixrgb( 1, 1, 1, 4, 7, 8, PD),
     image( 2, 2, [PA, PB, PC, PD], I).
 
 img3(I) :-
-    pixrgb-d( 0, 0, 1, 3, 4, 10, PA),
-    pixrgb-d( 0, 1, 0, 3, 5, 20, PB),
-    pixrgb-d( 1, 0, 0, 6, 7, 30, PC),
-    pixrgb-d( 1, 1, 1, 4, 7, 8, PD),
-    pixrgb-d( 0, 2, 1, 4, 7, 9, PE),
-    pixrgb-d( 1, 2, 1, 4, 7, 80, PF),
+    pixrgb( 0, 0, 1, 3, 4, 10, PA),
+    pixrgb( 0, 1, 0, 3, 5, 20, PB),
+    pixrgb( 1, 0, 0, 6, 7, 30, PC),
+    pixrgb( 1, 1, 1, 4, 7, 8, PD),
+    pixrgb( 0, 2, 1, 4, 7, 9, PE),
+    pixrgb( 1, 2, 1, 4, 7, 80, PF),
     image( 2, 3, [PA, PB, PD, PC, PE, PF], I).
