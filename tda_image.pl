@@ -1,5 +1,15 @@
 :- use_module(tda_pixel).
 
+% TDA Pixel
+% Dominio: X (int), Y (int), Valor (int | lista | string), Depth (int)
+% Recorrido: Lista
+% X e Y deben ser positivos, Depth debe ser un numero entre 0 y 255
+
+% Predicados:
+% pixel(X, Y, Valor, Depth, Pixel)
+% pixelGetVal(Pixel, Val)
+% pixelGetDepth(Pixel, Depth)
+
 image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Width > 0,
     Height > 0.
@@ -203,6 +213,46 @@ findPix(X, Y, [], [X, Y, -1, 0]).
 findPix(X, Y, [[X, Y, Val, D] | _], [X, Y, Val, D]).
 findPix(X, Y, [_ | T], PixR) :-
     findPix(X, Y, T, PixR).
+
+
+pixbitToString(_, [], "").
+pixbitToString(W, [[W, _, Val, _] | T], StrR) :-
+    number_string(Val, StrVal),
+    pixbitToString(W, T, StrT),
+    string_concat(StrVal, "\n", StrValNewL),
+    string_concat(StrValNewL, StrT, StrR).
+pixbitToString(W, [Pix | T], StrR) :-
+    pixelGetVal(Pix, Val),
+    number_string(Val, StrVal),
+    pixbitToString(W, T, StrT),
+    string_concat(StrVal, " ", StrValSpace),
+    string_concat(StrValSpace, StrT, StrR).
+
+
+pixrgbToString(_, [], "").
+pixrgbToString(W, [[W, _, Val, _] | T], StrR) :-
+    rgbToString(Val, StrVal),
+    pixrgbToString(W, T, StrT),
+    string_concat(StrVal, "\n", StrValNewL),
+    string_concat(StrValNewL, StrT, StrR).
+pixrgbToString(W, [Pix | T], StrR) :-
+    pixelGetVal(Pix, Val),
+    rgbToString(Val, StrVal),
+    pixrgbToString(W, T, StrT),
+    string_concat(StrVal, " ", StrValSpace),
+    string_concat(StrValSpace, StrT, StrR).
+    
+pixhexToString(_, [], "").
+pixhexToString(W, [[W, _, Val, _] | T], StrR) :-
+    pixhexToString(W, T, StrT),
+    string_concat(Val, "\n", StrValNewL),
+    string_concat(StrValNewL, StrT, StrR).
+pixhexToString(W, [Pix | T], StrR) :-
+    pixelGetVal(Pix, Val),
+    pixhexToString(W, T, StrT),
+    string_concat(Val, " ", StrValSpace),
+    string_concat(StrValSpace, StrT, StrR).
+
 
 imageDepthLayers(I, LI) :-
     imageIsBitmap(I),
