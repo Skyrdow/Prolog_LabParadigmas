@@ -1,14 +1,58 @@
 :- use_module(tda_pixel).
 
-% TDA Pixel
-% Dominio: X (int), Y (int), Valor (int | lista | string), Depth (int)
+% TDA Imagen
+% Dominio: Ancho (int), Alto (int), Valor de Compresión (int | lista | string), Pixeles (lista)
 % Recorrido: Lista
-% X e Y deben ser positivos, Depth debe ser un numero entre 0 y 255
+% Ancho y Alto deben ser positivos, los pixeles ingresados deben ser homogeneos y deben completar la imagen totalmente.
 
 % Predicados:
-% pixel(X, Y, Valor, Depth, Pixel)
-% pixelGetVal(Pixel, Val)
-% pixelGetDepth(Pixel, Depth)
+% image(Width, Height, Pixs, Imagen)
+% imageGetPixs(Imagen, Pixs).
+% imageGetComp(Imagen, Comp).
+% imageSetComp(ImagenEntrada, ValorNuevo, ImagenSalida).
+% imageIsBitmap(Imagen)
+% imageIsPixmap(Imagen)
+% imageIsHexmap(Imagen)
+% imageIsCompressed(Imagen)
+% imageFlipH(Imagen, ImagenSalida)
+% flipPixsH(Ancho, Pixeles, PixelesVolteados)
+% imageFlipV(Imagen, ImagenSalida)
+% flipPixsV(Alto, Pixeles, PixelesVolteados)
+% imageCrop(Imagen, X1, Y1, X2, Y2, ImagenSalida)
+% cropPixs(X1, Y1, X2, Y2, Pixeles, PixelesRecortados)
+% imageRGBToHex(Imagen, ImagenSalida)
+% pixsRGBtoHex(PixelesRGB, PixelesHex)
+% imageToHistogram(Imagen, R)
+% compoundToHistogram(ClumpedList, Histograma)
+% pixsToVal(Pixeles, Valores)
+% imageRotate90(Imagen, ImagenSalida)
+% pixsSwapXY(Pixeles, PixelesTraspuestos)
+% imageCompress(Imagen, ImagenComprimida)
+% maxHistogram(Histograma, ConstanteRecursiva, MaximoValorHistograma)
+% erasePixs(Pixeles, ValorFiltrador, PixelesFiltrados)
+% imageChangePixel(Imagen, PixelModificado, ImagenModificada)
+% changePixs(Pixeles, PixelModificado, PixelesModificados)
+% invertColorRGB(PixelEntrada, PixelSalida)
+% imageString(Imagen, StringSalida)
+% sortImage(Imagen, ImagenOrdenada)
+% sortPixs(IteradorI, IteradorJ, Ancho, Alto, Pixeles, PixelesOrdenados)
+% findPix(X, Y, Pixeles, PixelEncontrado/NoEncontrado)
+% pixbitToString(Ancho, Pixbits, StringPixeles)
+% pixrgbToString(Ancho, Pixrgb, StringPixeles)
+% pixhexToString(Ancho, Pixhex, StringPixeles)
+% imageDepthLayers(Imagen, ListaImagenes)
+% imageDepthLayers(Imagen, ListaImagenes)
+% imageDepthLayers(Imagen, ListaImagenes)
+% pixsToDepths(Pixeles, Profundidades)
+% bitDepthLayersGen(Imagen, Profundidades, ListaImagenes)
+% bitDepthPixs(Pixeles, Profundidad, PixelesDeProfundidad)
+% rgbDepthLayersGen(Imagen, Profundidades, ListaImagenes)
+% rgbDepthPixs(Pixeles, Profundidad, PixelesDeProfundidad)
+% hexDepthLayersGen(Imagen, Profundidades, ListaImagenes)
+% hexDepthPixs(Pixeles, Profundidad, PixelesDeProfundidad)
+% imageDecompress(ImagenComprimida, ImagenDescomprimida)
+% decompPixs(IteradorI, IteradorJ, Ancho, Alto, ValorCompresión, Pixeles, PixelesDescomprimidos)
+% decompPix(PixelComprimido, ValorCompresión, PixelDescomprimido)
 
 image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Width > 0,

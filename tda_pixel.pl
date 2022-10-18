@@ -7,7 +7,7 @@
 
 % Predicados:
 % pixel(X, Y, Valor, Depth, Pixel)
-% pixelGetVal(Pixel, Val)
+% pixelGetVal(Pixel, Valor)
 % pixelGetDepth(Pixel, Depth)
 
 %% Clausulas
