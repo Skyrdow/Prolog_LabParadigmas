@@ -28,7 +28,7 @@
 % imageRotate90(Imagen, ImagenSalida)
 % pixsSwapXY(Pixeles, PixelesTraspuestos)
 % imageCompress(Imagen, ImagenComprimida)
-% maxHistogram(Histograma, ConstanteRecursiva, MaximoValorHistograma)
+% maxHistogram(Histograma, ValorMaximoTemporal, MaximoValorHistograma)
 % erasePixs(Pixeles, ValorFiltrador, PixelesFiltrados)
 % imageChangePixel(Imagen, PixelModificado, ImagenModificada)
 % changePixs(Pixeles, PixelModificado, PixelesModificados)
@@ -54,205 +54,275 @@
 % decompPixs(IteradorI, IteradorJ, Ancho, Alto, ValorCompresión, Pixeles, PixelesDescomprimidos)
 % decompPix(PixelComprimido, ValorCompresión, PixelDescomprimido)
 
+
+%% Clausulas
+% Reglas
+
+% Dominio: Ancho (int), Alto (int), Pixeles (lista), Imagen
+% Constructor de imagen
 image(Width, Height, Pixs, [Width, Height, -1, Pixs]) :-
     Width > 0,
     Height > 0.
 
+% Dominio: Imagen, Pixeles (lista)
+% Selector de pixeles de una imagen
 imageGetPixs([_, _, _, Pixs], Pixs).
+% Dominio: Imagen, ValorDeColor (int | lista | string)
+% Selector del valor de compresión de una imagen
 imageGetComp([_, _, Comp, _], Comp).
+% Dominio: Imagen, ValorDeColor (int | lista | string), Imagen
+% Modificador del valor de compresión de una imagen
+% Solo se puede modificar el valor de compresión de una imagen no comprimida (-1),
+% esto impide comprimir de nuevo una imagen comprimida
 imageSetComp([Width, Height, -1, Pixs], Val, [Width, Height, Val, Pixs]).
 
-
+% Dominio: Imagen
+% Revisa si la imagen es un bitmap
 imageIsBitmap(I) :-
     image(_, _, [H | _], I),
     pixbit(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
+% Dominio: Imagen
+% Revisa si la imagen es un pixmap
 imageIsPixmap(I) :-
     image(_, _, [H | _], I),
     pixrgb(_, _, _, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
+% Dominio: Imagen
+% Revisa si la imagen es un hexmap
 imageIsHexmap(I) :-
     image(_, _, [H | _], I),
     pixhex(_, _, _, _, H). % revisa el primer pixel, ya que la entrada tiene pixeles homogeneos
 
+% Dominio: Imagen
+% Revisa si la imagen esta comprimida
 imageIsCompressed(I) :-
     imageGetComp(I, Comp),
     not(Comp = -1).
     
-% abs(pixY - imgH)
+% Dominio: Imagen, Imagen
+% Voltea horizontalmente la imagen modificando la coordenada X de cada pixel
+% según la siguiente fórmula NewPixX = abs(pixX - imgW)
 imageFlipH(I, I2) :-
     image(W, H, Pixs, I),
-    flipPixsH(W-1, Pixs, FPixs),
+    flipPixsH(W-1, Pixs, FPixs),    % Se usa W-1, no W, porque las dimensiones de la imagen comienzan desde 1, pero las coordenadas de pixel desde 0
     image(W, H, FPixs, I2).
 
-flipPixsH(_, [], []).
+% Dominio: Ancho (int), Pixeles (lista), Pixeles (lista)
+% Se usa recursión para cambiar la coordenada X de cada uno de los pixeles
+flipPixsH(_, [], []).   % Caso base
 flipPixsH(Dim, [H | T], [PixR | ListaR]) :-
     pixel(X1, Y, Val, D, H),
-    X2 is abs(X1 - Dim),
+    X2 is abs(X1 - Dim),    % Fórmula
     pixel(X2, Y, Val, D, PixR),
     flipPixsH(Dim, T, ListaR).
 
 
+% Dominio: Imagen, Imagen
+% Voltea horizontalmente la imagen modificando la coordenada Y de cada pixel
+% según la siguiente fórmula NewPixY = abs(pixY - imgH)
 imageFlipV(I, I2) :-
     image(W, H, Pixs, I),
-    flipPixsV(H-1, Pixs, FPixs),
+    flipPixsV(H-1, Pixs, FPixs),    % Se usa H-1, no H, porque las dimensiones de la imagen comienzan desde 1, pero las coordenadas de pixel desde 0
     image(W, H, FPixs, I2).
 
-% abs(pix(X|Y) - img(W|H)), misma funcion, distintas variables
-flipPixsV(_, [], []).
+% Dominio: Ancho (int), Pixeles (lista), Pixeles (lista)
+% Se usa recursión para cambiar la coordenada X de cada uno de los pixeles
+flipPixsV(_, [], []).   % Caso base
 flipPixsV(Dim, [H | T], [PixR | ListaR]) :-
     pixel(X, Y1, Val, D, H),
-    Y2 is abs(Y1 - Dim),
+    Y2 is abs(Y1 - Dim),    % Fórmula
     pixel(X, Y2, Val, D, PixR),
     flipPixsV(Dim, T, ListaR).
 
 
+% Dominio: Imagen, X1 (int), Y1 (int), X2 (int), Y2 (int), Imagen
+% Elimina los pixeles que no se encuentren dentro del rectángulo determinado por
+% los 2 puntos P1(X1,Y1) y P2(X2,Y2), donde P1 corresponde a la esquina superior izquierda
+% y P2 corresponde a la esquina inferior derecha de la imagen 
 imageCrop(I, X1, Y1, X2, Y2, I2) :-
     image(_, _, Pixs, I),
-    cropPixs(X1, Y1, X2, Y2, Pixs, FPixs),
-    NewW is 1+X2-X1,
-    NewH is 1+Y2-Y1,
+    cropPixs(X1, Y1, X2, Y2, Pixs, FPixs),  % Filtrar pixeles
+    NewW is 1+X2-X1,    % Ajustar dimensiones de la imagen nueva
+    NewH is 1+Y2-Y1,    % Ajustar dimensiones de la imagen nueva
     image(NewW, NewH, FPixs, I2).
 
-cropPixs(_, _, _, _, [], []).
-cropPixs(X1, Y1, X2, Y2, [H | T], ListaR) :-
-    cropPixs(X1, Y1, X2, Y2, T, ListaAux),
+% Dominio: X1 (int), Y1 (int), X2 (int), Y2 (int), Pixeles (lista), Pixeles (lista)
+% Se recorre recursivamente la lista de pixeles filtrando según las coordenadas delimitadoras
+cropPixs(_, _, _, _, [], []).   % Caso base
+cropPixs(X1, Y1, X2, Y2, [H | T], [PixR | ListaAux]) :-    % Caso 1: El pixel se encuentra dentro del rectángulo
     pixel(X, Y, Val, D, H),
-    X1 =< X, X =< X2, Y1 =< Y, Y =< Y2,
-    NewX is X - X1,
-    NewY is Y - Y1,
+    X1 =< X, X =< X2, Y1 =< Y, Y =< Y2, % revisar posición
+    NewX is X - X1, % Calcular nuevas coordenadas
+    NewY is Y - Y1, % Calcular nuevas coordenadas
     pixel(NewX, NewY, Val, D, PixR),
-    ListaR = [PixR | ListaAux].
-cropPixs(X1, Y1, X2, Y2, [_ | T], ListaR) :-
-    cropPixs(X1, Y1, X2, Y2, T, ListaAux),
-    ListaR = ListaAux.
+    cropPixs(X1, Y1, X2, Y2, T, ListaAux).
+cropPixs(X1, Y1, X2, Y2, [_ | T], ListaAux) :-  % Caso 2: El pixel no se encuentra dentro del rectángulo
+    cropPixs(X1, Y1, X2, Y2, T, ListaAux).
 
+% Dominio: Imagen, Imagen
+% Transforma los pixeles rgb de una imagen a hex
 imageRGBToHex(I, I2):-
     image(W, H, Pixs, I),
+    imageIsPixmap(I),
     pixsRGBtoHex(Pixs, RPixs),
     image(W, H, RPixs, I2).
 
-pixsRGBtoHex([], []).
+% Dominio: Pixeles, Pixeles
+% Se recorre recursivamente la lista de pixeles y se transforma
+pixsRGBtoHex([], []).   % Caso base
 pixsRGBtoHex([H | T], [R | ListaR]) :-
     pixel(X, Y, RGB, D, H),
-    hex_bytes(HexStr, RGB),
-    string_concat("#", HexStr, NewVal),
+    hex_bytes(HexStr, RGB), % Se transforma de [R, G, B] a String "RRGGBB"
+    string_concat("#", HexStr, NewVal), % Se le añade '#' a la string
     pixel(X, Y, NewVal, D, R),
     pixsRGBtoHex(T, ListaR).
 
+% Dominio: Imagen, Histograma (lista bidimensional)
+% Se obtiene una lista de todos los colores de la imagen y la cantidad de veces que se repiten
 imageToHistogram(I, R) :-
     image(_, _, _, I),
     imageGetPixs(I, Pixs),
-    pixsToVal(Pixs, Vals),
-    msort(Vals, SortVals),
-    clumped(SortVals, Clump),
-    compoundToHistogram(Clump, R).
+    pixsToVal(Pixs, Vals),  % Obtener la lista de valores de color
+    msort(Vals, SortVals),  % Ordenar la lista
+    clumped(SortVals, Clump),   % Contar las repeticiones
+    compoundToHistogram(Clump, R).  % Transformar la lista de formato Color-Numero a [Color, Numero]
 
-compoundToHistogram([], []).
+% Dominio: Lista Clumped, Histograma (lista bidimensional)
+% Se recorre recursivamente la lista clumped y se cambia de formato
+compoundToHistogram([], []).    % Caso base
 compoundToHistogram([Cl | T], [Histo | ListaR]) :-
-    compound_name_arguments(Cl, -, Histo),
+    compound_name_arguments(Cl, -, Histo),  % Se separan Color-Numero usando de referencia el '-'
     compoundToHistogram(T, ListaR).
 
 
-pixsToVal([], []).
+% Dominio: Pixeles (lista), Valores (lista)
+% Se aplica el selector de valor de color a cada elemento de la lista de pixeles
+pixsToVal([], []).  % Caso base
 pixsToVal([Pix | T], [Val | ListaR]) :-
     pixelGetVal(Pix, Val),
     pixsToVal(T, ListaR).
 
+% Dominio: Imagen, Imagen
+% Se rota la imagen en 90 grados en dirección horaria, intercambiando las coordenadas X e Y de los pixeles, y volteandolos
 imageRotate90(I, I2) :-
     image(W, H, Pixs, I),
-    pixsSwapXY(Pixs, PixsSwap),
-    flipPixsH(W-1, PixsSwap, PixsR),
+    pixsSwapXY(Pixs, PixsSwap), % intercambiar coordenadas X e Y
+    flipPixsH(W-1, PixsSwap, PixsR),    % voltear
     image(H, W, PixsR, I2).
 
+% Dominio: Pixeles (lista), Pixeles (lista)
+% Se recorre la lista de pixeles recursivamente y se intercambian X e Y
 pixsSwapXY([], []).
 pixsSwapXY([Pix | T], [PixR | ListaR]) :-
     pixel(X, Y, Val, D, Pix),
-    pixel(Y, X, Val, D, PixR),
+    pixel(Y, X, Val, D, PixR),  % intercambio
     pixsSwapXY(T, ListaR).
 
+% Dominio: Imagen, Imagen
+% Se comprime la imagen eliminando los pixeles del color más repetido, perdiendo la profundidad de los pixeles eliminados
 imageCompress(I, [W, H, CompVal, PixsR]) :-
-    imageToHistogram(I, Histo),
-    maxHistogram(Histo, [0, 0], CompVal),
+    imageToHistogram(I, Histo), % Se obtiene el histograma de la imagen
+    maxHistogram(Histo, [0, 0], CompVal),   % Se obtiene el valor que más se repite
     image(W, H, Pixs, I),
-    erasePixs(Pixs, CompVal, PixsR).
+    erasePixs(Pixs, CompVal, PixsR).    % Se borran los pixeles del color que más se repite
 
-maxHistogram([], [MaxVal, _], MaxVal).
-maxHistogram([[Val | Count] | T], [_, MaxCount], MaxHVal) :-
+% Dominio: Histograma, MaximoTemporal, ValorMaximo
+% Se recorre el histograma recursivamente, se compara el maximo temporal con cada valor
+maxHistogram([], [MaxVal, _], MaxVal).  % Caso base, se revisó por completo el histograma
+maxHistogram([[Val | Count] | T], [_, MaxCount], MaxHVal) :-    % Caso 1: El color se repite más que el maximo temporal  
     Count > MaxCount,
-    maxHistogram(T, [Val | Count], MaxHVal).
-maxHistogram([_ | T], Max, MaxHVal) :-
-    maxHistogram(T, Max, MaxHVal).
+    maxHistogram(T, [Val | Count], MaxHVal).    % Se cambia el nuevo maximo temporal
+maxHistogram([_ | T], Max, MaxHVal) :-  % Caso 2: El maximo temporal se mantiene
+    maxHistogram(T, Max, MaxHVal).  % se sigue con la recursión
 
-erasePixs([], _, []).
-% CASO 1, VAL = ERASEVAL
-erasePixs([[_, _, EraseVal, _] | T], EraseVal, ListaR) :-
+% Dominio: Pixeles (lista), ValorDeColor (int | lista | string), Pixeles (lista)
+% Borra todos los pixeles del color especificado
+erasePixs([], _, []).   % Caso base
+erasePixs([[_, _, EraseVal, _] | T], EraseVal, ListaR) :-   % Caso 1: Valor = EraseVal
     erasePixs(T, EraseVal, ListaR).
-% CASO 2, VAL != ERASEVAL
-erasePixs([Pix | T], EraseVal, [Pix | ListaR]) :-
+erasePixs([Pix | T], EraseVal, [Pix | ListaR]) :-   % Caso 2: Valor != EraseVal
     erasePixs(T, EraseVal, ListaR).
 
+% Dominio: Imagen, Pixel, Imagen
+% Cambia un pixel de la imagen por el entregado en el argumento, en base a la posición de estos
 imageChangePixel(I, PMod, I2) :-
     image(W, H, Pixs, I),
     changePixs(Pixs, PMod, PixsR),
     image(W, H, PixsR, I2).
 
-changePixs([], _, []).
-changePixs([[X, Y, _, _] | T], [X, Y, NewVal, NewD], [[X, Y, NewVal, NewD] | T]).
-changePixs([Pix | T], PMod, [Pix | ListaR]) :-
+% Dominio: Pixeles (lista), Pixel, Pixeles (lista)
+% Se recorre la lista de pixeles en busqueda del pixel que comparte posición X,Y con el pixel modificado
+changePixs([], _, []).  % Caso base
+changePixs([[X, Y, _, _] | T], [X, Y, NewVal, NewD], [[X, Y, NewVal, NewD] | T]).   % Caso 1: Coordenadas X,Y coinciden
+changePixs([Pix | T], PMod, [Pix | ListaR]) :-  % Caso 2: Las coordenadas no coinciden
     changePixs(T, PMod, ListaR).
 
+% Dominio: Pixel, Pixel
+% Invierte el color RGB de un pixrgb
 invertColorRGB(PE, PR) :-
-    pixrgb(X, Y, R, G, B, D, PE),
-    NewR is 255 - R,
-    NewG is 255 - G,
-    NewB is 255 - B,
+    pixrgb(X, Y, R, G, B, D, PE),   % Obtener valores
+    NewR is 255 - R,    % Invertir colores
+    NewG is 255 - G,    % Invertir colores
+    NewB is 255 - B,    % Invertir colores
     pixrgb(X, Y, NewR, NewG, NewB, D, PR).
 
-imageString(I, Str) :-
+% Dominio: Imagen, String
+% Transforma una imagen a una string de sus pixeles
+% Se usa el ancho de la imagen disminuido en 1 para detectar cuando un pixel es el último de la fila, y agregar un salto de linea '\n'
+imageString(I, Str) :-  % Caso 1: la imagen de entrada esta comprimida
+    imageIsCompressed(I),
+    imageDecompress(I, I2), % Decomprimirla
+    imageString(I2, Str).
+imageString(I, Str) :-  % Caso 2: bitmap
     image(W, _, _, I),
     imageIsBitmap(I),
     W1 is W - 1,
-    sortImage(I, I2),
+    sortImage(I, I2),   % Se ordenan los pixeles de la imagen para simplificar la transformación a string
     imageGetPixs(I2, Pixs),
     pixbitToString(W1, Pixs, Str).
-imageString(I, Str) :-
+imageString(I, Str) :-  % Caso 3: pixmap
     image(W, _, _, I),
     imageIsPixmap(I),
     W1 is W - 1,
-    sortImage(I, I2),
+    sortImage(I, I2),   % Se ordenan los pixeles de la imagen para simplificar la transformación a string
     imageGetPixs(I2, Pixs),
     pixrgbToString(W1, Pixs, Str).
-imageString(I, Str) :-
+imageString(I, Str) :-  % Caso 4: hexmap
     image(W, _, _, I),
     imageIsHexmap(I),
     W1 is W - 1,
-    sortImage(I, I2),
+    sortImage(I, I2),   % Se ordenan los pixeles de la imagen para simplificar la transformación a string
     imageGetPixs(I2, Pixs),
     pixhexToString(W1, Pixs, Str).
 
-
+% Dominio: Imagen, Imagen
+% Ordena los pixeles de la imagen, partiendo de la coordenada X, y luego la coordenada Y 
 sortImage(I, I2) :-
     image(W, H, Pixs, I),
     image(W, H, PixsR, I2),
-    W1 is W - 1,
-    H1 is H - 1,
+    W1 is W - 1,    % Se ajusta en -1 por la diferencia entre comenzar a contar las dimensiones de la imagen en 1, y las coordenadas del pixel desde 0
+    H1 is H - 1,    % Se ajusta en -1 por la diferencia entre comenzar a contar las dimensiones de la imagen en 1, y las coordenadas del pixel desde 0
     sortPixs(0, 0, W1, H1, Pixs, PixsR).
 
-sortPixs(W, H, W, H, Pixs, [PixR]) :-
+% Dominio: IteradorI (int), IteradorJ (int), Ancho (int), Alto (int), Pixeles (lista), Pixeles (lista)
+% Se recorren todas las coordenadas de la imagen buscando los pixeles que corresponden, añadiendolos a la lista de pixeles
+sortPixs(W, H, W, H, Pixs, [PixR]) :-   % Caso base: Se recorrió toda la imagen
     findPix(W, H, Pixs, PixR).
 
-sortPixs(W, J, W, H, Pixs, [PixR | PixT]) :-
+sortPixs(W, J, W, H, Pixs, [PixR | PixT]) :-    % Caso 1: Se llega al fin de una fila
     findPix(W, J, Pixs, PixR),
-    NewI is 0,
-    NewJ is J+1,
+    NewI is 0,  % Se reinicia IteradorI a 0
+    NewJ is J+1,    % Se aumenta en 1 IteradorJ
     sortPixs(NewI, NewJ, W, H, Pixs, PixT).
 
-sortPixs(I, J, W, H, Pixs, [PixR | PixT]) :-
+sortPixs(I, J, W, H, Pixs, [PixR | PixT]) :-    % Caso 2: No hay ningún caso especial
     findPix(I, J, Pixs, PixR),
-    NewI is I+1,
+    NewI is I+1,    % Se aumenta en 1 IteradorI
     sortPixs(NewI, J, W, H, Pixs, PixT).
 
+% Dominio: X (int), Y (int), Pixeles (lista), Pixel
+% Se itera en toda la lista de pixeles hasta encontrar el que esta ubicado en la posición X,Y
 findPix(X, Y, [], [X, Y, -1, 0]).
 findPix(X, Y, [[X, Y, Val, D] | _], [X, Y, Val, D]).
 findPix(X, Y, [_ | T], PixR) :-

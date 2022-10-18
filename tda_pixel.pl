@@ -1,4 +1,4 @@
-:- module(tda_pixel, [pixel/5, pixelGetVal/2, pixelGetDepth/2, pixbit/5, pixrgb/7, rgbcheck/1, pixhex/5, hexcheck/1, pixbitToString/3, pixrgbToString/3, pixhexToString/3, rgbToString/2]).
+:- module(tda_pixel, [pixel/5, pixelGetVal/2, pixelGetDepth/2, pixbit/5, pixrgb/7, rgbcheck/1, pixhex/5, hexcheck/1, rgbToString/2]).
 
 % TDA Pixel
 % Dominio: X (int), Y (int), Valor (int | lista | string), Depth (int)
@@ -12,8 +12,8 @@
 
 %% Clausulas
 % Reglas
-% Constructor
 % Dominio: X (int), Y (int), Valor (int | lista | string), Depth (int), pixel
+% Constructor de pixeles
 pixel(X, Y, Val, D, [X, Y, Val, D]) :-
     number(X),
     number(Y),
@@ -99,7 +99,7 @@ pixhex(X, Y, Hex, D, P) :-
     string(Hex),
     hexcheck(Hex).
 
-Dominio: String
+% Dominio: String
 % Revisa que los valores de color se encuentren en el rango requerido transformando la string a una lista de valores RGB
 hexcheck(Str) :-
     name(Str, [_ | T]), % separar "#RRGGBB" en "#" y "RRGGBB"
