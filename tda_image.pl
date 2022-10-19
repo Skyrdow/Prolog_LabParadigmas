@@ -105,7 +105,8 @@ imageIsCompressed(I) :-
 % según la siguiente fórmula NewPixX = abs(pixX - imgW)
 imageFlipH(I, I2) :-
     image(W, H, Pixs, I),
-    flipPixsH(W-1, Pixs, FPixs),    % Se usa W-1, no W, porque las dimensiones de la imagen comienzan desde 1, pero las coordenadas de pixel desde 0
+    % Se usa W-1, no W, porque las dimensiones de la imagen comienzan desde 1, pero las coordenadas de pixel desde 0
+    flipPixsH(W-1, Pixs, FPixs),
     image(W, H, FPixs, I2).
 
 % Dominio: Ancho (int), Pixeles (lista), Pixeles (lista)
@@ -123,7 +124,8 @@ flipPixsH(Dim, [H | T], [PixR | ListaR]) :-
 % según la siguiente fórmula NewPixY = abs(pixY - imgH)
 imageFlipV(I, I2) :-
     image(W, H, Pixs, I),
-    flipPixsV(H-1, Pixs, FPixs),    % Se usa H-1, no H, porque las dimensiones de la imagen comienzan desde 1, pero las coordenadas de pixel desde 0
+    % Se usa H-1, no H, porque las dimensiones de la imagen comienzan desde 1, pero las coordenadas de pixel desde 0
+    flipPixsV(H-1, Pixs, FPixs),
     image(W, H, FPixs, I2).
 
 % Dominio: Ancho (int), Pixeles (lista), Pixeles (lista)
@@ -184,7 +186,7 @@ imageToHistogram(I, R) :-
     image(_, _, _, I),
     imageGetPixs(I, Pixs),
     pixsToVal(Pixs, Vals),  % Obtener la lista de valores de color
-    msort(Vals, SortVals),  % Ordenar la lista
+    msort(Vals, SortVals),  % Ordenar la lista, sin eliminar duplicados
     clumped(SortVals, Clump),   % Contar las repeticiones
     compoundToHistogram(Clump, R).  % Transformar la lista de formato Color-Numero a [Color, Numero]
 
@@ -323,157 +325,203 @@ sortPixs(I, J, W, H, Pixs, [PixR | PixT]) :-    % Caso 2: No hay ningún caso es
 
 % Dominio: X (int), Y (int), Pixeles (lista), Pixel
 % Se itera en toda la lista de pixeles hasta encontrar el que esta ubicado en la posición X,Y
-findPix(X, Y, [], [X, Y, -1, 0]).
-findPix(X, Y, [[X, Y, Val, D] | _], [X, Y, Val, D]).
-findPix(X, Y, [_ | T], PixR) :-
+findPix(X, Y, [], [X, Y, -1, 0]).   % Caso 1: No existe
+findPix(X, Y, [[X, Y, Val, D] | _], [X, Y, Val, D]).    % Caso 2: Pixel encontrado
+findPix(X, Y, [_ | T], PixR) :- % Caso 3: se sigue con la recursión
     findPix(X, Y, T, PixR).
 
-
-pixbitToString(_, [], "").
-pixbitToString(W, [[W, _, Val, _] | T], StrR) :-
-    number_string(Val, StrVal),
-    pixbitToString(W, T, StrT),
-    string_concat(StrVal, "\n", StrValNewL),
+% Dominio: Ancho (int), Pixeles (lista), String
+% Se recorre la lista ordenada de pixeles, y se transforma cada uno a string
+% Función especial para pixbit
+pixbitToString(_, [], "").  % Caso base
+pixbitToString(W, [[W, _, Val, _] | T], StrR) :-    % Caso 1: Si el pixel es el último de la fila
+    number_string(Val, StrVal), % Transformación
+    pixbitToString(W, T, StrT), % Recursión
+    string_concat(StrVal, "\n", StrValNewL),    % Se agrega nueva linea
     string_concat(StrValNewL, StrT, StrR).
-pixbitToString(W, [Pix | T], StrR) :-
+pixbitToString(W, [Pix | T], StrR) :-   % Caso 2: El pixel no es un caso especial
     pixelGetVal(Pix, Val),
-    number_string(Val, StrVal),
-    pixbitToString(W, T, StrT),
-    string_concat(StrVal, " ", StrValSpace),
+    number_string(Val, StrVal), % Transformación
+    pixbitToString(W, T, StrT), % Recursión
+    string_concat(StrVal, "\t", StrValSpace),    % Se agrega un espacio
     string_concat(StrValSpace, StrT, StrR).
 
 
-pixrgbToString(_, [], "").
-pixrgbToString(W, [[W, _, Val, _] | T], StrR) :-
-    rgbToString(Val, StrVal),
-    pixrgbToString(W, T, StrT),
-    string_concat(StrVal, "\n", StrValNewL),
+% Dominio: Ancho (int), Pixeles (lista), String
+% Se recorre la lista ordenada de pixeles, y se transforma cada uno a string
+% Función especial para pixrgb
+pixrgbToString(_, [], "").  % Caso base
+pixrgbToString(W, [[W, _, Val, _] | T], StrR) :-    % Caso 1: Si el pixel es el último de la fila
+    rgbToString(Val, StrVal), % Transformación
+    pixrgbToString(W, T, StrT), % Recursión
+    string_concat(StrVal, "\n", StrValNewL),    % Se agrega nueva linea
     string_concat(StrValNewL, StrT, StrR).
-pixrgbToString(W, [Pix | T], StrR) :-
+pixrgbToString(W, [Pix | T], StrR) :-   % Caso 2: El pixel no es un caso especial
     pixelGetVal(Pix, Val),
-    rgbToString(Val, StrVal),
-    pixrgbToString(W, T, StrT),
-    string_concat(StrVal, " ", StrValSpace),
+    rgbToString(Val, StrVal), % Transformación
+    pixrgbToString(W, T, StrT), % Recursión
+    string_concat(StrVal, "\t", StrValSpace),    % Se agrega un espacio
     string_concat(StrValSpace, StrT, StrR).
     
-pixhexToString(_, [], "").
-pixhexToString(W, [[W, _, Val, _] | T], StrR) :-
-    pixhexToString(W, T, StrT),
-    string_concat(Val, "\n", StrValNewL),
+    
+% Dominio: Ancho (int), Pixeles (lista), String
+% Se recorre la lista ordenada de pixeles, y se transforma cada uno a string
+% Función especial para pixhex
+pixhexToString(_, [], "").  % Caso base
+pixhexToString(W, [[W, _, Val, _] | T], StrR) :-    % Caso 1: Si el pixel es el último de la fila
+    pixhexToString(W, T, StrT), % Recursión
+    string_concat(Val, "\n", StrValNewL),    % Se agrega nueva linea
     string_concat(StrValNewL, StrT, StrR).
-pixhexToString(W, [Pix | T], StrR) :-
+pixhexToString(W, [Pix | T], StrR) :-   % Caso 2: El pixel no es un caso especial
     pixelGetVal(Pix, Val),
-    pixhexToString(W, T, StrT),
-    string_concat(Val, " ", StrValSpace),
+    pixhexToString(W, T, StrT), % Recursión
+    string_concat(Val, "\t", StrValSpace),    % Se agrega un espacio
     string_concat(StrValSpace, StrT, StrR).
 
-
+% Dominio: Image, Lista
+% Decompone la imagen dada por capas de profundidad, dejando en blanco los pixeles que no pertenecen a cada capa
+% Versión de la funcion para bitmaps
 imageDepthLayers(I, LI) :-
     imageIsBitmap(I),
     imageGetPixs(I, Pixs),
-    pixsToDepths(Pixs, Depths),
-    bitDepthLayersGen(I, Depths, LI).
+    pixsToDepths(Pixs, Depths), % Extraer las profundidades presentes en la imagen
+    sort(Depths, SortDepths),   % Ordenar de mayor a menor y eliminar duplicados
+    bitDepthLayersGen(I, SortDepths, LI).   % Generar DepthLayers
 
+% Dominio: Image, Lista
+% Decompone la imagen dada por capas de profundidad, dejando en blanco los pixeles que no pertenecen a cada capa
+% Versión de la funcion para pixmaps
 imageDepthLayers(I, LI) :-
     imageIsPixmap(I),
     imageGetPixs(I, Pixs),
-    pixsToDepths(Pixs, Depths),
-    rgbDepthLayersGen(I, Depths, LI).
+    pixsToDepths(Pixs, Depths), % Extraer las profundidades presentes en la imagen
+    sort(Depths, SortDepths),   % Ordenar de mayor a menor y eliminar duplicados
+    rgbDepthLayersGen(I, SortDepths, LI).   % Generar DepthLayers
 
+% Dominio: Image, Lista
+% Decompone la imagen dada por capas de profundidad, dejando en blanco los pixeles que no pertenecen a cada capa
+% Versión de la funcion para hexmaps
 imageDepthLayers(I, LI) :-
     imageIsHexmap(I),
     imageGetPixs(I, Pixs),
-    pixsToDepths(Pixs, Depths),
-    hexDepthLayersGen(I, Depths, LI).
+    pixsToDepths(Pixs, Depths), % Extraer las profundidades presentes en la imagen
+    sort(Depths, SortDepths),   % Ordenar de mayor a menor y eliminar duplicados
+    hexDepthLayersGen(I, SortDepths, LI).   % Generar DepthLayers
 
-pixsToDepths([], []).
+% Dominio: Pixeles (lista), Lista
+% Obtener todas las profundidades de una lista de pixeles
+pixsToDepths([], []).   % Caso base
 pixsToDepths([Pix | T], [D | ListaR]) :-
     pixelGetDepth(Pix, D),
     pixsToDepths(T, ListaR).
 
-bitDepthLayersGen(_, [], []).
-bitDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
+% Dominio: Imagen, Lista, Pixeles (lista)
+% Se genera en cada recursión una capa de profundidad, recorriendo la lista de profundidades de una imagen
+% Versión para bitmaps
+bitDepthLayersGen(_, [], []).   % Caso base: Generadas todas las profundidades
+bitDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :- 
     image(W, H, Pixs, I),
-    bitDepthPixs(Pixs, IterDep, PixsDep),
+    bitDepthPixs(Pixs, IterDep, PixsDep),   % Obtener pixeles de capa de profundidad
     image(W, H, PixsDep, DImg),
-    bitDepthLayersGen(I, T, ListaR).
+    bitDepthLayersGen(I, T, ListaR).    % Recursión
 
-bitDepthPixs([], _, []).
-bitDepthPixs([Pix | T], D, [Pix | ListaR]) :-
+% Dominio: Pixeles (lista), Profundidad (int), Pixeles (lista)
+% Se recorre la lista de pixeles, si el pixel es de la profundidad se mantiene, sino, se cambia por uno blanco
+% Versión de pixbit
+bitDepthPixs([], _, []).    % Caso base
+bitDepthPixs([Pix | T], D, [Pix | ListaR]) :-   % Caso 1: Misma profundidad
     pixelGetDepth(Pix, D),
     bitDepthPixs(T, D, ListaR).
-bitDepthPixs([Pix | T], Depth, [P | ListaR]) :-
+bitDepthPixs([Pix | T], Depth, [P | ListaR]) :- % Caso 2: Otra profundidad
     pixbit(X, Y, _, D, Pix),
     pixbit(X, Y, 1, D, P),
     bitDepthPixs(T, Depth, ListaR).
 
-rgbDepthLayersGen(_, [], []).
+
+% Dominio: Imagen, Lista, Pixeles (lista)
+% Se genera en cada recursión una capa de profundidad, recorriendo la lista de profundidades de una imagen
+% Versión para bitmaps
+rgbDepthLayersGen(_, [], []).   % Caso base: Generadas todas las profundidades
 rgbDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
     image(W, H, Pixs, I),
-    rgbDepthPixs(Pixs, IterDep, PixsDep),
+    rgbDepthPixs(Pixs, IterDep, PixsDep),   % Obtener pixeles de capa de profundidad
     image(W, H, PixsDep, DImg),
-    rgbDepthLayersGen(I, T, ListaR).
+    rgbDepthLayersGen(I, T, ListaR).    % Recursión
 
-rgbDepthPixs([], _, []).
-rgbDepthPixs([Pix | T], D, [Pix | ListaR]) :-
+% Dominio: Pixeles (lista), Profundidad (int), Pixeles (lista)
+% Se recorre la lista de pixeles, si el pixel es de la profundidad se mantiene, sino, se cambia por uno blanco
+% Versión de pixbit
+rgbDepthPixs([], _, []).    % Caso base
+rgbDepthPixs([Pix | T], D, [Pix | ListaR]) :-   % Caso 1: Misma profundidad
     pixelGetDepth(Pix, D),
     rgbDepthPixs(T, D, ListaR).
-rgbDepthPixs([Pix | T], Depth, [P | ListaR]) :-
+rgbDepthPixs([Pix | T], Depth, [P | ListaR]) :- % Caso 2: Otra profundidad
     pixrgb(X, Y, _, _, _, D, Pix),
     pixrgb(X, Y, 255, 255, 255, D, P),
     rgbDepthPixs(T, Depth, ListaR).
 
-hexDepthLayersGen(_, [], []).
+
+% Dominio: Imagen, Lista, Pixeles (lista)
+% Se genera en cada recursión una capa de profundidad, recorriendo la lista de profundidades de una imagen
+% Versión para bitmaps
+hexDepthLayersGen(_, [], []).   % Caso base: Generadas todas las profundidades
 hexDepthLayersGen(I, [IterDep | T], [DImg | ListaR]) :-
     image(W, H, Pixs, I),
-    hexDepthPixs(Pixs, IterDep, PixsDep),
+    hexDepthPixs(Pixs, IterDep, PixsDep),   % Obtener pixeles de capa de profundidad
     image(W, H, PixsDep, DImg),
-    hexDepthLayersGen(I, T, ListaR).
+    hexDepthLayersGen(I, T, ListaR).    % Recursión
 
-hexDepthPixs([], _, []).
-hexDepthPixs([Pix | T], D, [Pix | ListaR]) :-
+% Dominio: Pixeles (lista), Profundidad (int), Pixeles (lista)
+% Se recorre la lista de pixeles, si el pixel es de la profundidad se mantiene, sino, se cambia por uno blanco
+% Versión de pixbit
+hexDepthPixs([], _, []).    % Caso base
+hexDepthPixs([Pix | T], D, [Pix | ListaR]) :-   % Caso 1: Misma profundidad
     pixelGetDepth(Pix, D),
     hexDepthPixs(T, D, ListaR).
-hexDepthPixs([Pix | T], Depth, [P | ListaR]) :-
+hexDepthPixs([Pix | T], Depth, [P | ListaR]) :- % Caso 2: Otra profundidad
     pixhex(X, Y, _, D, Pix),
     pixhex(X, Y, "#FFFFFF", D, P),
     hexDepthPixs(T, Depth, ListaR).
 
+% Dominio: Imagen, Imagen
+% Descomprime una función, rellenando los pixeles faltantes con el valor de compresión guardado,
+% se pierde la información de profundidad de los pixeles comprimidos
 imageDecompress(I, I) :-
-    not(imageIsCompressed(I)).
-
+    not(imageIsCompressed(I)).  % Si la imagen no está comprimida, no se hace nada
 imageDecompress([W, H, Comp, Pixs], I2) :-
-    W1 is W - 1,
-    H1 is H - 1,
-    decompPixs(0, 0, W1, H1, Comp, Pixs, DecompPixs),
+    W1 is W - 1,    % Se ajusta en -1 por la diferencia entre comenzar a contar las dimensiones de la imagen en 1, y las coordenadas del pixel desde 0
+    H1 is H - 1,    % Se ajusta en -1 por la diferencia entre comenzar a contar las dimensiones de la imagen en 1, y las coordenadas del pixel desde 0
+    decompPixs(0, 0, W1, H1, Comp, Pixs, DecompPixs),   % Descomprimir pixeles
     image(W, H, DecompPixs, I2).
 
-decompPixs(W, H, W, H, CompVal, Pixs, [PixR]) :-
+% Dominio: IteradorI (int), IteradorJ (int), Ancho (int), Alto (int), Valor (int | lista | string), Pixeles (lista), Pixeles (lista)
+% Se recorre cada coordenada de la imagen, rellenando los pixeles no encontrados con el valor de color especificado
+decompPixs(W, H, W, H, CompVal, Pixs, [PixR]) :-    % Caso base: Se recorrió toda la imagen
     findPix(W, H, Pixs, PixF),
     decompPix(PixF, CompVal, PixR).
-
-decompPixs(W, J, W, H, CompVal, Pixs, [PixR | PixT]) :-
+decompPixs(W, J, W, H, CompVal, Pixs, [PixR | PixT]) :- % Caso 1: Se llega al fin de una fila
     findPix(W, J, Pixs, PixF),
     decompPix(PixF, CompVal, PixR),
-    NewI is 0,
-    NewJ is J+1,
+    NewI is 0,  % Se reinicia el iteradorI
+    NewJ is J+1,    % Se aumenta el iteradorJ
     decompPixs(NewI, NewJ, W, H, CompVal, Pixs, PixT).
-
-decompPixs(I, J, W, H, CompVal, Pixs, [PixR | PixT]) :-
+decompPixs(I, J, W, H, CompVal, Pixs, [PixR | PixT]) :- % Caso 2: Coordenada sin caso especial
     findPix(I, J, Pixs, PixF),
     decompPix(PixF, CompVal, PixR),
     NewI is I+1,
     decompPixs(NewI, J, W, H, CompVal, Pixs, PixT).
 
-decompPix([X, Y, -1, 0], CompVal, DecomPix) :-
-    pixel(X, Y, CompVal, 0, DecomPix).
-decompPix(Pix, _, Pix).
+% Dominio: Pixel, Valor (int | lista | string), Pixel
+% Descomprime un pixel, si el valor es -1, significa que no existe en la imagen y debe ser restaurado
+decompPix([X, Y, -1, 0], CompVal, DecomPix) :-  % Caso 1: Pixel eliminado
+    pixel(X, Y, CompVal, 0, DecomPix).  % Profundidad por defecto en 0
+decompPix(Pix, _, Pix). % Caso 2: El pixel existe, no se modifica
 
 
 img1(I) :-
     pixbit( 0, 0, 1, 10, PA),
     pixbit( 0, 1, 0, 20, PB),
-    pixbit( 1, 0, 0, 30, PC),
+    pixbit( 1, 0, 0, 20, PC),
     pixbit( 1, 1, 1, 40, PD),
     image( 2, 2, [PB, PA, PD, PC], I).
 
