@@ -516,34 +516,3 @@ decompPixs(I, J, W, H, CompVal, Pixs, [PixR | PixT]) :- % Caso 2: Coordenada sin
 decompPix([X, Y, -1, 0], CompVal, DecomPix) :-  % Caso 1: Pixel eliminado
     pixel(X, Y, CompVal, 0, DecomPix).  % Profundidad por defecto en 0
 decompPix(Pix, _, Pix). % Caso 2: El pixel existe, no se modifica
-
-
-img1(I) :-
-    pixbit( 0, 0, 1, 10, PA),
-    pixbit( 0, 1, 0, 20, PB),
-    pixbit( 1, 0, 0, 20, PC),
-    pixbit( 1, 1, 1, 40, PD),
-    image( 2, 2, [PB, PA, PD, PC], I).
-
-img4(I) :-
-    pixhex( 0, 0, "#FF0011", 10, PA),
-    pixhex( 0, 1, "#FF5544", 20, PB),
-    pixhex( 1, 0, "#00FF22", 30, PC),
-    pixhex( 1, 1, "#0011FF", 40, PD),
-    image( 2, 2, [PB, PA, PD, PC], I).
-
-img2(I) :-
-    pixrgb( 0, 0, 1, 3, 4, 10, PA),
-    pixrgb( 0, 1, 0, 3, 5, 20, PB),
-    pixrgb( 1, 0, 0, 6, 7, 30, PC),
-    pixrgb( 1, 1, 1, 4, 7, 8, PD),
-    image( 2, 2, [PA, PB, PC, PD], I).
-
-img3(I) :-
-    pixrgb( 0, 0, 1, 3, 4, 10, PA),
-    pixrgb( 0, 1, 0, 3, 5, 20, PB),
-    pixrgb( 1, 0, 0, 6, 7, 30, PC),
-    pixrgb( 1, 1, 1, 4, 7, 8, PD),
-    pixrgb( 0, 2, 1, 4, 7, 9, PE),
-    pixrgb( 1, 2, 1, 4, 7, 80, PF),
-    image( 2, 3, [PA, PB, PD, PC, PE, PF], I).
