@@ -1,0 +1,37 @@
+TDA pixel:
+Descripción: Guardan los datos del pixel, tipo, coordenada, valor y profundidad.
+Constructor: x (int) X y (int) X valor (int | lista | string) X profundidad (int) X pixbit (lista).
+Selectores: pixel, pixelGetVal, pixelGetDepth.
+Modificadores: No aplica.
+Pertenencia: pixel.
+
+TDA pixbit:
+Descripción: Tipo de pixel que guarda 1 o 0 en el valor.
+Costructor: x (int) X y (int) X bit (int) X profundidad (int) X pixbit.
+Selector: pixbit.
+Modificadores: No aplica.
+Pertenencia: pixbit.
+
+TDA pixrgb:
+Descripción: Tipo de pixel que guarda 3 valores enteros en una lista.
+Costructor: x (int) X y (int) X r (int) X g (int) X b (int) X profundidad (int) X pixrgb.
+Selector: pixrgb.
+Modificadores: no aplica.
+Pertenencia: pixrgb.
+Predicados: rgbcheck, rgbToString.
+
+TDA pixhex:
+Descripción: Tipo de pixel que guarda una string que representa un valor hexadecimal en el valor.
+Costructor: x (int) X y (int) X hex (string) X profundidad (int) X pixhex.
+Selectores: pixhex.
+Modificadores: no aplica.
+Pertenencia: pixhex.
+Predicados: hexcheck.
+
+TDA imagen: 
+Descripción: Guarda la información de la imagen (tamaño y valor de compresión) y los pixeles de la misma. El valor de compresión almacena el color comprimido por la función compress para luego recuperar la imagen original, si este es -1, significa que la imagen no está comprimida.
+Costructor: ancho (int) X alto (int) X pixeles (lista) X imagen.
+Selectores: image, imageGetComp, imageGetPixs.
+Modificadores: imageSetComp.
+Pertenencia: image, imageIsBitmap, imageIsPixmap, imageIsHexmap, imageIsCompressed.
+Predicados: imageFlipH, flipPixsH, imageFlipV, flipPixsV, imageCrop, cropPixs, imageRGBToHex, pixsRGBtoHex, imageToHistogram, compoundToHistogram, pixsToVal, imageRotate90, pixsSwapXY, imageCompress, maxHistogram, erasePixs, imageChangePixel, changePixs, invertColorRGB, imageString, sortImage, sortPixs, findPix, pixbitToString, pixrgbToString, pixhexToString, imageDepthLayers, imageDepthLayers, imageDepthLayers, pixsToDepths, bitDepthLayersGen, bitDepthPixs, rgbDepthLayersGen, rgbDepthPixs, hexDepthLayersGen, hexDepthPixs, imageDecompress, decompPixs, decompPix.

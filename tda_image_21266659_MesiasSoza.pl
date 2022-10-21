@@ -32,7 +32,7 @@
 % erasePixs(Pixeles, ValorFiltrador, PixelesFiltrados)
 % imageChangePixel(Imagen, PixelModificado, ImagenModificada)
 % changePixs(Pixeles, PixelModificado, PixelesModificados)
-% invertColorRGB(PixelEntrada, PixelSalida)
+% imageInvertColorRGB(PixelEntrada, PixelSalida)
 % imageString(Imagen, StringSalida)
 % sortImage(Imagen, ImagenOrdenada)
 % sortPixs(IteradorI, IteradorJ, Ancho, Alto, Pixeles, PixelesOrdenados)
@@ -262,7 +262,7 @@ changePixs([Pix | T], PMod, [Pix | ListaR]) :-  % Caso 2: Las coordenadas no coi
 
 % Dominio: Pixel, Pixel
 % Invierte el color RGB de un pixrgb
-invertColorRGB(PE, PR) :-
+imageInvertColorRGB(PE, PR) :-
     pixrgb(X, Y, R, G, B, D, PE),   % Obtener valores
     NewR is 255 - R,    % Invertir colores
     NewG is 255 - G,    % Invertir colores
