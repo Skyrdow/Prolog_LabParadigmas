@@ -1,4 +1,4 @@
-:- use_module(tda_pixel).
+:- use_module(tda_pixel_21266659_MesiasSoza).
 
 % TDA Imagen
 % Dominio: Ancho (int), Alto (int), Valor de Compresión (int | lista | string), Pixeles (lista)
@@ -33,7 +33,7 @@
 % imageChangePixel(Imagen, PixelModificado, ImagenModificada)
 % changePixs(Pixeles, PixelModificado, PixelesModificados)
 % imageInvertColorRGB(PixelEntrada, PixelSalida)
-% imageString(Imagen, StringSalida)
+% imageToString(Imagen, StringSalida)
 % sortImage(Imagen, ImagenOrdenada)
 % sortPixs(IteradorI, IteradorJ, Ancho, Alto, Pixeles, PixelesOrdenados)
 % findPix(X, Y, Pixeles, PixelEncontrado/NoEncontrado)
@@ -272,25 +272,25 @@ imageInvertColorRGB(PE, PR) :-
 % Dominio: Imagen, String
 % Transforma una imagen a una string de sus pixeles
 % Se usa el ancho de la imagen disminuido en 1 para detectar cuando un pixel es el último de la fila, y agregar un salto de linea '\n'
-imageString(I, Str) :-  % Caso 1: la imagen de entrada esta comprimida
+imageToString(I, Str) :-  % Caso 1: la imagen de entrada esta comprimida
     imageIsCompressed(I),
     imageDecompress(I, I2), % Decomprimirla
-    imageString(I2, Str).
-imageString(I, Str) :-  % Caso 2: bitmap
+    imageToString(I2, Str).
+imageToString(I, Str) :-  % Caso 2: bitmap
     image(W, _, _, I),
     imageIsBitmap(I),
     W1 is W - 1,
     sortImage(I, I2),   % Se ordenan los pixeles de la imagen para simplificar la transformación a string
     imageGetPixs(I2, Pixs),
     pixbitToString(W1, Pixs, Str).
-imageString(I, Str) :-  % Caso 3: pixmap
+imageToString(I, Str) :-  % Caso 3: pixmap
     image(W, _, _, I),
     imageIsPixmap(I),
     W1 is W - 1,
     sortImage(I, I2),   % Se ordenan los pixeles de la imagen para simplificar la transformación a string
     imageGetPixs(I2, Pixs),
     pixrgbToString(W1, Pixs, Str).
-imageString(I, Str) :-  % Caso 4: hexmap
+imageToString(I, Str) :-  % Caso 4: hexmap
     image(W, _, _, I),
     imageIsHexmap(I),
     W1 is W - 1,

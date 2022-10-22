@@ -1,4 +1,4 @@
-:- module(tda_pixel, [pixel/5, pixelGetVal/2, pixelGetDepth/2, pixbit/5, pixrgb/7, rgbcheck/1, pixhex/5, hexcheck/1, rgbToString/2]).
+:- module(tda_pixel_21266659_MesiasSoza, [pixel/5, pixelGetVal/2, pixelGetDepth/2, pixbit/5, pixrgb/7, rgbcheck/1, pixhex/5, hexcheck/1, rgbToString/2]).
 
 % TDA Pixel
 % Dominio: X (int), Y (int), Valor (int | lista | string), Depth (int)
