@@ -1,4 +1,5 @@
-:- use_module(tda_pixel_21266659_MesiasSoza).
+:- module(tda_image_21266659_MesiasSoza, [image/4, imageGetPixs/2, imageGetComp/2, imageSetComp/3, imageIsBitmap/1, imageIsPixmap/1, imageIsHexmap/1, imageIsCompressed/1, imageFlipH/2, flipPixsH/3, imageFlipV/2, flipPixsV/3, imageCrop/6, cropPixs/6, imageRGBToHex/2, pixsRGBtoHex/2, imageToHistogram/2, compoundToHistogram/2, pixsToVal/2, imageRotate90/2, pixsSwapXY/2, imageCompress/2, maxHistogram/3, erasePixs/3, imageChangePixel/3, changePixs/3, imageInvertColorRGB/2, imageToString/2, sortImage/2, sortPixs/6, findPix/4, pixbitToString/3, pixrgbToString/3, pixhexToString/3, imageDepthLayers/2, imageDepthLayers/2, imageDepthLayers/2, pixsToDepths/2, bitDepthLayersGen/3, bitDepthPixs/3, rgbDepthLayersGen/3, rgbDepthPixs/3, hexDepthLayersGen/3, hexDepthPixs/3, imageDecompress/2, decompPixs/7, decompPix/3]).
+:- reexport(tda_pixel_21266659_MesiasSoza).
 
 % TDA Imagen
 % Dominio: Ancho (int), Alto (int), Valor de Compresión (int | lista | string), Pixeles (lista)
