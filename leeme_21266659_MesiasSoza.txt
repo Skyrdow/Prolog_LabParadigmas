@@ -11,7 +11,7 @@ Repositorio para el laboratorio 2 basado en prolog, del ramo paradigmas de progr
 git clone https://github.com/Skyrdow/LabParadigmas_Prolog.git
 ```
 ## Ejecutando el laboratorio
-Se debe consultar el archivo "script.pl" con SWI-Prolog para una ejecución correcta, los archivos "tda_image.pl" y "tda_pixel.pl" deben estar en la misma carpeta que el archivo que estamos consultando.
+Se debe consultar el archivo "pruebas_21266659_MesiasSoza.pl" con SWI-Prolog para una ejecución correcta, los archivos "tda_image_21266659_MesiasSoza.pl" y "tda_pixel_21266659_MesiasSoza.pl" deben estar en la misma carpeta que el archivo que estamos consultando.
 ## Uso de los predicados
 Se asume que el usuario hace buen uso de los predicados implementados, por lo que los valores de entrada deben tomar en cuenta las restricciones indicadas en la documentación de cada función.
 
