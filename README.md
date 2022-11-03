@@ -8,7 +8,7 @@ Repositorio para el laboratorio 2 basado en prolog, del ramo paradigmas de progr
 * Se requiere Swi-prolog versión 8.4 o superior. (https://www.swi-prolog.org/Download.html)
 * Descargar el proyecto o clonar el repositorio con el comando 
 ```
-git clone https://github.com/Skyrdow/LabParadigmas_Prolog.git
+git clone https://github.com/Skyrdow/Lab2_21266659_MesiasSoza.git
 ```
 ## Ejecutando el laboratorio
 Se debe consultar el archivo "script.pl" con SWI-Prolog para una ejecución correcta, los archivos "tda_image.pl" y "tda_pixel.pl" deben estar en la misma carpeta que el archivo que estamos consultando.
